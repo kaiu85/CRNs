@@ -1,8 +1,5 @@
 import numpy as np
 from tqdm import tqdm
-import networkx as nx
-import matplotlib as mpl
-import matplotlib.pyplot as plt
 
 class reaction:
     def __init__(self, N, educts, products, catalysts, ks):
@@ -114,89 +111,7 @@ class simple_reaction_network:
         pot = np.log(self.A)
         
         return pot
-
-    def show_network(self):
-        
-        # Create a graph with N+M edges, where each reaction is connected to all reactants
-        self.net = nx.DiGraph()
-        
-        for i in range(self.N + self.M):
-            self.net.add_node(i+1)
-        
-        dissipation = np.zeros( (len(self.reactions),) )
-        Js = np.zeros( (len(self.reactions),) )
-        delta_Gs = np.zeros( (len(self.reactions),) )
-        
-        for i in range(len(self.reactions)):
-            J = self.reactions[i].get_scalar_flux(self.A)
-            delta_G = self.reactions[i].get_potential_difference(self.A)
-
             
-            # Reaction runs in forward direction
-            if J > 0:
-                for e in self.reactions[i].educts:
-                    self.net.add_edge(e + 1,self.N + i + 1, dissipation = delta_G*J)
-                for p in self.reactions[i].products:
-                    self.net.add_edge(self.N + i + 1, p + 1, dissipation = delta_G*J)
-            # Reaction runs in backward direction
-            else:
-                for e in self.reactions[i].educts:
-                    self.net.add_edge(self.N + i + 1,e + 1, dissipation = delta_G*J)
-                for p in self.reactions[i].products:
-                    self.net.add_edge(p + 1,self.N + i + 1, dissipation = delta_G*J)
-                    
-            
-            dissipation[i] = J*delta_G
-            delta_Gs[i] = delta_G
-            Js[i] = J
-        
-        G = self.net
-        pos = nx.layout.circular_layout(G)
-
-        #print(len(G))
-        
-        node_sizes = [20 for i in range(self.N)] + [10 for i in range(self.M)]
-        node_colors = ['r' for i in range(self.N)] + ['k' for i in range(self.M)]
-        M = G.number_of_edges()
-       
-        nodes = nx.draw_networkx_nodes(G, pos, node_size=node_sizes, node_color=node_colors)
-        
-        cmap = mpl.cm.get_cmap('bwr')
-
-        #print('edge colors:')
-        #print(edge_colors)
-        edges,dissipation = zip(*nx.get_edge_attributes(G,'dissipation').items())
-        
-        print('DISSIPATION:')
-        print(dissipation)
-        
-        dissipation = np.concatenate(dissipation)
-        
-        print('DISSIPATION:')
-        print(dissipation.shape)
-        print(dissipation)
-        
-        max_range_dissipation = np.maximum(dissipation.max(), -dissipation.min())
-        
-        edges = nx.draw_networkx_edges(G, pos, node_size=node_sizes, arrowstyle='->', edge_color = dissipation, edge_cmap = plt.cm.bwr)
-        #                               arrowsize=10, edge_color=edge_colors,
-        #                               edge_cmap=plt.cm.bwr, width=2)
-        '''
-        # set alpha value for each edge
-        for i in range(M):
-            edges[i].set_alpha(edge_alphas[i])
-        '''
-        if max_range_dissipation > 1e-12:
-            pc = mpl.collections.PatchCollection(edges, cmap=plt.cm.bwr)
-            pc.set_array(dissipation)
-            plt.colorbar(pc)
-
-        ax = plt.gca()
-        ax.set_axis_off()
-        plt.show()
-        #print(dissipation)
-            
-        
     def init_concentrations(self, A0 = None):
         
         if A0 is None:
